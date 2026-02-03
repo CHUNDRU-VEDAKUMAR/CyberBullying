@@ -91,6 +91,8 @@ def test_full_pipeline(model):
             "You're an idiot",
             "I will kill you",
             "You absolutely killed that presentation!",
+            "I will not kill you",
+            "I don't kill you",
         ]
         
         for text in test_texts:

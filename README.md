@@ -1,10 +1,40 @@
 # Context-Aware, Severity-Based and Explainable Cyberbullying Detection
-“Context-Aware, Severity-Based and Explainable Cyberbullying Detection with Actionable Interventions”
+Context-Aware, Severity-Based and Explainable Cyberbullying Detection with Actionable Interventions”
+This system detects cyberbullying in text using a four-pillar approach:
 
+## 🎯 Four Core Pillars
 
-## 📋 Project Overview
+### 1. **Context-Aware** 🧠
+The system understands linguistic context, not just keywords:
+- **Negation Detection**: "I don't kill you" is flagged as SAFE (not bullying)
+- **Positive Achievement**: "You killed that presentation!" is SAFE (sarcasm/praise detection)
+- **Target Type Classification**: Distinguishes personal attacks from criticism of ideas
+- **Opinion vs Personal**: Separates constructive critique from personal insults
+- **Modules**: `src/negation_handler.py`, `src/context_analyzer.py`
 
-This system detects cyberbullying in text using multiple approaches:
+### 2. **Severity-Based** ⚖️
+Maps detected toxicity types to actionable severity levels:
+- **CRITICAL**: Threats, severe toxicity → BLOCK_ACCOUNT + REPORT_TO_CYBER_CELL
+- **HIGH**: Identity hate, hate speech → PERMANENT_BAN + HIDE_CONTENT  
+- **MEDIUM**: General toxicity → HIDE_COMMENT + ISSUE_WARNING
+- **LOW**: Insults, obscenity → FLAG_FOR_REVIEW + USER_TIMEOUT
+- **Confidence Calibration**: Adjusts interventions based on model confidence (>50% = strict action, <50% = flag for human review)
+- **Module**: `src/ontology.py`
+
+### 3. **Explainable** 👁️
+Shows exactly which words triggered detection:
+- **LIME Explanations**: Local Interpretable Model-agnostic Explanations per label
+- **Fallback Explainer**: Leave-one-out perturbation when LIME is unavailable (CPU-friendly)
+- **Per-Label Attribution**: Shows word-level impact for each toxicity type detected
+- **Normalized Scores**: Outputs both raw and normalized importance weights
+- **Module**: `src/explainability.py`
+
+### 4. **Actionable Interventions** 🛡️
+Recommends specific, contextual actions for moderators:
+- **Severity-Driven**: Intervention choice depends on severity + confidence
+- **Human Review Option**: Low-confidence detections flag for human moderators instead of auto-action
+- **Transparency**: Shows reasoning (detected type, severity, confidence, triggering words)
+- **Module**: `src/ontology.py` → `recommend_intervention()`
 
 ### 🎯 **System Architecture**
 
@@ -100,10 +130,36 @@ CSV file with columns:
 
 ---
 
+## 🔬 Supported Models
+
+The system works with any HuggingFace sequence classification model. Pre-configured models:
+
+### **unitary/toxic-bert** (Default)
+- **Strengths**: Pre-trained on Jigsaw toxic comments; fast inference on CPU
+- **Use when**: Speed is critical, baseline toxicity detection needed
+- **Load**: `python run_project.py` (automatic)
+
+### **roberta-base** (Recommended)
+- **Strengths**: Better contextual understanding of negations, sarcasm, and nuance
+- **Use when**: Context-awareness and accuracy are priorities
+- **Load**: Edit `run_project.py` to change `model_name='roberta-base'`, or:
+  ```python
+  from src.main_system import CyberbullyingSystem
+  system = CyberbullyingSystem(model_name='roberta-base')
+  ```
+
+### Custom Models
+Load any HuggingFace sequence classification model:
+```python
+system = CyberbullyingSystem(model_name='your-model-name')
+```
+
+---
+
 ## 🔬 Model Details
 
-### **BERT Model: unitary/toxic-bert**
-- **Architecture**: BERT-base-uncased fine-tuned on Jigsaw Toxic Comments dataset
+The default **BERT model: unitary/toxic-bert** is fine-tuned on Jigsaw Toxic Comments:
+- **Architecture**: BERT-base-uncased
 - **Labels Detected**: 
   - `toxic` - Rude, disrespectful, unreasonable
   - `severe_toxic` - Extremely offensive language
@@ -112,10 +168,7 @@ CSV file with columns:
   - `insult` - Personal disparaging language
   - `identity_hate` - Attacks on protected groups
 
-### **Explainability (LIME)**
-- Generates local explanations for each prediction
-- Shows word-level contributions to toxicity score
-- Helps understand model decisions
+**Note**: Each model runs on CPU by design (no CUDA required).
 
 ---
 

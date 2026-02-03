@@ -5,8 +5,10 @@ import numpy as np
 from transformers import AutoTokenizer, AutoModelForSequenceClassification
 from src.preprocessing import clean_text
 
-# Force CPU-only mode for safety in environments without GPUs
-os.environ.setdefault("CUDA_VISIBLE_DEVICES", "")
+# Device autodetection: use CUDA when available unless forced to CPU
+# Set environment variable FORCE_CPU=1 to force CPU-only behavior
+DETECTED_DEVICE = torch.device('cpu') if os.environ.get("FORCE_CPU", "0") == "1" else torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+
 
 class AdvancedContextModel:
     """Context-aware, severity-based, explainable toxicity detector.
@@ -20,13 +22,13 @@ class AdvancedContextModel:
     Integrates with negation handling, context analysis, and LIME explainability.
     """
     def __init__(self, model_name='unitary/toxic-bert', device=None, labels=None):
-        print(f"\n[CONTEXT-AWARE] Loading model ({model_name}) on CPU...")
         self.model_name = model_name
-        # Force CPU device regardless of CUDA availability
-        self.device = torch.device('cpu')
+        # allow explicit device override, otherwise use detected device
+        self.device = torch.device(device) if device is not None else DETECTED_DEVICE
 
+        print(f"\n[CONTEXT-AWARE] Loading model ({model_name}) on {self.device}...")
         self.tokenizer = AutoTokenizer.from_pretrained(self.model_name)
-        # load model and ensure it's on CPU
+        # load model and move to selected device
         self.model = AutoModelForSequenceClassification.from_pretrained(self.model_name, torch_dtype=torch.float32)
         self.model.to(self.device)
         self.model.eval()

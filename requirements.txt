@@ -7,3 +7,6 @@ lime==0.2.0
 # Optional for tests/benchmarks:
 pytest==7.4.2
 spacy>=3.5.0
+torch>=2.0.0
+datasets>=2.14.0
+accelerate>=0.20.3

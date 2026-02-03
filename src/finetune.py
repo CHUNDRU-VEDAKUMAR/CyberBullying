@@ -5,9 +5,8 @@ import torch
 import pandas as pd
 from sklearn.model_selection import train_test_split
 
-# Force CPU
-os.environ.setdefault("CUDA_VISIBLE_DEVICES", "")
-DEVICE = torch.device('cpu')
+# Device autodetection: allow FORCE_CPU=1 to force CPU, otherwise use CUDA when available
+DEVICE = torch.device('cpu') if os.environ.get("FORCE_CPU", "0") == "1" else torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
 
 def load_data(csv_path, text_col='text', label_cols=None, sample_frac=None):
@@ -43,7 +42,12 @@ class SimpleDataset(torch.utils.data.Dataset):
 
     def __getitem__(self, idx):
         item = {k: torch.tensor(v[idx]) for k, v in self.encodings.items()}
-        item['labels'] = torch.tensor(self.labels[idx])
+        lbl = self.labels[idx]
+        # support multi-label (list/array) as float for BCEWithLogitsLoss
+        if isinstance(lbl, (list, tuple)) or (hasattr(lbl, 'shape') and getattr(lbl, 'ndim', 0) >= 1):
+            item['labels'] = torch.tensor(lbl, dtype=torch.float)
+        else:
+            item['labels'] = torch.tensor(lbl, dtype=torch.long)
         return item
 
 
@@ -51,6 +55,10 @@ def train_model(model_name, train_csv, output_dir, text_col='text', label_cols=N
     tokenizer = AutoTokenizer.from_pretrained(model_name)
     model = AutoModelForSequenceClassification.from_pretrained(model_name)
     model.to(DEVICE)
+
+    # if multi-label, set problem_type so Trainer uses BCEWithLogitsLoss
+    if label_cols is not None and isinstance(label_cols, (list, tuple)):
+        model.config.problem_type = 'multi_label_classification'
 
     texts, labels = load_data(train_csv, text_col=text_col, label_cols=label_cols, sample_frac=sample_frac)
     train_texts, val_texts, train_labels, val_labels = train_test_split(texts, labels, test_size=0.1, random_state=42)
@@ -69,7 +77,7 @@ def train_model(model_name, train_csv, output_dir, text_col='text', label_cols=N
         learning_rate=lr,
         logging_steps=10,
         save_total_limit=2,
-        fp16=False,
+        fp16=True if DEVICE.type == 'cuda' else False,
         evaluation_strategy='epoch'
     )
 

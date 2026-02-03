@@ -3,8 +3,9 @@ import torch
 from transformers import AutoTokenizer, AutoModelForSequenceClassification
 from src.preprocessing import clean_text
 
-# Prevent CUDA usage by default
-os.environ.setdefault("CUDA_VISIBLE_DEVICES", "")
+# Device autodetection: honor FORCE_CPU env var, otherwise use CUDA when available
+DETECTED_DEVICE = torch.device('cpu') if os.environ.get("FORCE_CPU", "0") == "1" else torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+
 
 class ModelManager:
     """Flexible model loader for different pretrained classifiers with context-awareness.
@@ -23,10 +24,9 @@ class ModelManager:
     """
     def __init__(self, model_name='unitary/toxic-bert', device=None, labels=None):
         self.model_name = model_name
-        # force CPU to avoid CUDA usage
-        self.device = torch.device('cpu')
+        self.device = torch.device(device) if device is not None else DETECTED_DEVICE
 
-        print(f"[MODEL MANAGER] Loading {model_name} on CPU...")
+        print(f"[MODEL MANAGER] Loading {model_name} on {self.device}...")
         self.tokenizer = AutoTokenizer.from_pretrained(model_name)
         self.model = AutoModelForSequenceClassification.from_pretrained(model_name, torch_dtype=torch.float32)
         self.model.to(self.device)

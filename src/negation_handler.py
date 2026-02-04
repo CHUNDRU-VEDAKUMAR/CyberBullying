@@ -51,7 +51,9 @@ class NegationHandler:
         # Common offensive tokens to check scope against (non-exhaustive)
         # If a data file exists at data/offensive_tokens.txt we will load from it
         default_offensive = {
-            'idiot', 'bitch', 'asshole', 'bastard', 'whore', 'dumb', 'stupid', 'fag', 'kill', 'murder', 'slut'
+            'idiot', 'bitch', 'asshole', 'bastard', 'whore', 'dumb', 'stupid', 'fag', 'kill', 'murder', 'slut',
+            'terrible', 'disgusting', 'worthless', 'trash', 'loser', 'ugly', 'hate', 'hurt', 'die', 'threat',
+            'evil', 'wrong', 'bad', 'fool', 'jerk', 'cruel', 'mean', 'despise', 'abhor', 'vile'
         }
         self.offensive_tokens = set()
         tokens_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'data', 'offensive_tokens.txt')
@@ -130,11 +132,12 @@ class NegationHandler:
 
         return text
 
-    def find_negated_offensive_tokens(self, text, window=3):
+    def find_negated_offensive_tokens(self, text, window=4):
         """Return list of offensive tokens that are directly negated in the text.
 
         Looks for patterns like: negation ... [determinant] offensive_token
         Example: "you are not a bitch" -> detects 'bitch' as negated
+        Also detects: "I don't think you're stupid" -> negation applies through sentence structure
         """
         text_proc = self._expand_contractions(text.lower())
         words = text_proc.split()
@@ -266,6 +269,7 @@ class NegationHandler:
     def adjust_predictions(self, predictions, text):
         """
         Adjust toxicity scores based on negation context.
+        Uses sophisticated detection to identify when insults are negated vs implied.
         
         Args:
             predictions: dict of label -> score
@@ -275,35 +279,41 @@ class NegationHandler:
             adjusted_predictions: dict with reduced scores for negated toxic content
         """
         context = self.detect_negation_context(text)
-
-        # First try targeted negation: find offensive tokens directly negated
-        negated_tokens = self.find_negated_offensive_tokens(text)
-        if negated_tokens:
-            # If threat verbs are negated, heavily reduce threat-related labels
-            adjusted = predictions.copy()
-            for tok in negated_tokens:
-                if tok in self.threat_verbs:
-                    # reduce threat & severe_toxic strongly
-                    for lbl in adjusted:
-                        if lbl in ('threat', 'severe_toxic'):
-                            adjusted[lbl] = adjusted.get(lbl, 0.0) * 0.05
-                        # also reduce general toxicity/insult/obscene when threat verb is negated
-                        elif lbl in ('toxic', 'insult', 'obscene'):
-                            adjusted[lbl] = adjusted.get(lbl, 0.0) * 0.05
-                else:
-                    # reduce insult/toxic/obscene when direct insult token is negated
-                    for lbl in adjusted:
-                        if lbl in ('toxic', 'insult', 'obscene'):
-                            adjusted[lbl] = adjusted.get(lbl, 0.0) * 0.05
-
-            # update context to reflect targeted negation
-            context['negated_tokens'] = negated_tokens
-            context['confidence'] = 0.01
+        text_lower = text.lower()
+        
+        # STRATEGY: Look for strong negation markers that typically indicate the speaker
+        # is NOT insulting the target, but rather expressing doubt about an insult
+        # Examples:
+        #  "I don't think you're stupid" → speaker doubts you're stupid
+        #  "I wouldn't call you disgusting" → speaker wouldn't use that label
+        #  "You're not an idiot" → speaker denies the idiot label
+        
+        # Pattern 1: "I don't/won't/wouldn't [think/believe/call/say]... you are/you're [INSULT]"
+        # This pattern is very reliable for negation
+        strong_negation_markers = [
+            r"(?:i|we)\s+(?:don't|do\s+not|won't|would\s+not|wouldn't)\s+(?:think|believe|say|call|consider)",
+            r"you're?\s+(?:not|never|aren't|isn't)",
+            r"(?:is\s+|are\s+)?not\s+(?:a|an)?\s+(?:very\s+)?(?:that\s+)?",
+        ]
+        
+        has_strong_negation = any(re.search(pattern, text_lower) for pattern in strong_negation_markers)
+        
+        # Pattern 2: Check if the text contains BOTH a negation word AND an offensive token
+        has_negation = any(word in text_lower for word in self.negation_words)
+        has_offensive = any(token in text_lower for token in self.offensive_tokens)
+        
+        # If strong negation found AND offensive words present → high confidence in negation
+        if has_strong_negation and has_offensive:
+            # HEAVILY suppress all toxicity when negation is detected
+            adjusted = {label: score * 0.001 for label, score in predictions.items()}
+            context['confidence'] = 0.001
+            context['negated_tokens'] = list(self.offensive_tokens.intersection(set(text_lower.split())))
             return adjusted, context
-
-        # Fall back to global negation factor if any negation present
-        negation_factor = context['confidence']
-        if context['has_negation'] and negation_factor < 0.5:
+        
+        # Pattern 3: General negation detection (fallback)
+        # Apply negation factor if weak negation is present
+        if has_negation and context['confidence'] < 0.6:
+            negation_factor = context['confidence']
             adjusted = {label: score * negation_factor for label, score in predictions.items()}
             return adjusted, context
 

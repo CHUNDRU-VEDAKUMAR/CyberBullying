@@ -327,3 +327,116 @@ For issues or questions, check:
 ---
 
 **Last Updated**: January 29, 2026
+
+
+CyberBullying Detection System
+Overview
+This project implements an advanced system for detecting cyberbullying in text data. It leverages state-of-the-art NLP models, ensemble techniques, context analysis, and explainability modules to provide robust and interpretable predictions. The system is designed for research, evaluation, and deployment in real-world scenarios.
+
+Project Structure
+├── data/                  # Datasets and resources
+│   ├── train.csv
+│   ├── test.csv
+│   ├── test_labels.csv
+│   ├── sample_submission.csv
+│   └── offensive_tokens.txt
+├── scripts/               # Utility and export scripts
+│   └── export_onnx.py
+├── src/                   # Source code for all modules
+│   ├── advanced_calibration.py
+│   ├── advanced_context.py
+│   ├── advanced_ensemble.py
+│   ├── api.py
+│   ├── baseline_model.py
+│   ├── bert_model.py
+│   ├── calibration.py
+│   ├── comprehensive_evaluation.py
+│   ├── config.py
+│   ├── context_analyzer.py
+│   ├── data_augmentation.py
+│   ├── evaluate.py
+│   ├── explainability.py
+│   ├── finetune.py
+│   ├── generate_predictions.py
+│   ├── main_system.py
+│   ├── model_manager.py
+│   ├── negation_handler.py
+│   ├── ontology.py
+│   ├── preprocessing.py
+│   └── __pycache__/
+├── tests/                 # Test suites
+│   ├── full_system_test.py
+│   └── supreme_test_system.py
+├── run_project.py         # Main entry point for running the system
+├── STARTUP.py             # Startup script
+├── requirements.txt       # Python dependencies
+├── README.md              # Project documentation (this file)
+├── README_FINAL.txt       # Final delivery readme
+├── README_RESEARCH_PACKAGE.md # Research package readme
+├── FINAL_DELIVERY_SUMMARY.md  # Final delivery summary
+├── IMPLEMENTATION_STATUS.md   # Implementation progress
+├── ADVANCED_IMPLEMENTATION_SUMMARY.md # Advanced implementation details
+├── MODEL_RATIONALE.md     # Model rationale and design
+├── PAPER_PUBLICATION_GUIDE.md # Guide for publishing research
+├── QUICK_REFERENCE.md     # Quick reference guide
+├── RESEARCH_PAPER.md      # Main research paper
+├── START_HERE_RESEARCH_PAPER.md # Start here for research
+├── TECHNICAL_APPENDIX.md  # Technical appendix
+├── TEST_RESULTS_FINAL.md  # Final test results
+├── final_validation.py    # Final validation script
+├── validate_final.py      # Validation script
+├── verify_pillars.py      # Pillar verification script
+
+
+Key Features
+Advanced NLP Models: Utilizes BERT and ensemble models for high-accuracy detection.
+Contextual Analysis: Handles negation, context, and ontology for nuanced understanding.
+Explainability: Provides model explanations for predictions.
+Calibration & Evaluation: Includes advanced calibration and comprehensive evaluation modules.
+Data Augmentation: Supports robust training with data augmentation techniques.
+API Support: Ready for integration via API endpoints.
+Getting Started
+1. Install Dependencies
+Ensure you have Python 3.8+ installed. Install required packages:
+pip install -r requirements.txt
+
+2. Prepare Data
+Place your datasets in the data directory. The expected files are:
+
+train.csv, test.csv, test_labels.csv, sample_submission.csv, offensive_tokens.txt
+3. Run the System
+To run the main system:
+python run_project.py
+
+Or use the startup script:
+python STARTUP.py
+
+4. Testing & Validation
+Or run validation scripts:
+
+python final_validation.py
+python validate_final.py
+
+
+Main Modules
+src/main_system.py: Orchestrates the full pipeline.
+src/baseline_model.py, src/bert_model.py, src/advanced_ensemble.py: Core models.
+src/context_analyzer.py, src/negation_handler.py, src/ontology.py: Context and language understanding.
+src/explainability.py: Model explainability tools.
+src/generate_predictions.py: Generates predictions for test data.
+src/api.py: API endpoints for integration.
+Documentation
+See the following files for more details:
+
+README_FINAL.txt: Final delivery instructions
+README_RESEARCH_PACKAGE.md: Research package overview
+FINAL_DELIVERY_SUMMARY.md: Summary of final delivery
+IMPLEMENTATION_STATUS.md: Implementation progress
+MODEL_RATIONALE.md: Model design rationale
+TECHNICAL_APPENDIX.md: Technical details
+RESEARCH_PAPER.md: Main research paper
+Deployment
+For deployment instructions, see DEPLOYMENT_GUIDE.md.
+
+Citation
+If you use this system in your research, please cite the corresponding research paper (see RESEARCH_PAPER.md).

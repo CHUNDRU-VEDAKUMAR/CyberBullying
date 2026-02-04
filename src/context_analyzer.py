@@ -136,7 +136,10 @@ class ContextAnalyzer:
         is_positive = self.is_positive_achievement(text)
         
         # Check for affection words (opposite of harm)
+        # But exclude negative contexts like "nobody likes you"
         is_affection = any(word in text_lower for word in self.affection_words)
+        if is_affection and any(neg in text_lower for neg in ['nobody', 'no one', "don't", "doesn't", "won't"]):
+            is_affection = False  # Override: negative context negates affection
         
         # Calculate context score (0 = reduce toxicity, 1 = keep toxicity)
         context_score = 1.0
